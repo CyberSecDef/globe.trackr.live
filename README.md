@@ -200,6 +200,10 @@ Pillow, rasterio and scipy, stages the sources into `tools/.cache/`, then
 
 ## Data credits and licensing
 
+The code is MIT — see [LICENSE](LICENSE). The baked files in `public/` are
+derivatives of other people's data and keep their own terms, listed per channel
+in [DATA-LICENSES.md](DATA-LICENSES.md).
+
 Public domain or CC-BY, except where noted:
 
 - **NASA Earth Observatory** — Blue Marble Next Generation (Reto Stöckli), the
@@ -214,4 +218,6 @@ Public domain or CC-BY, except where noted:
   globe ever goes commercial, drop the Köppen channel or swap in another climate
   map.
 - Live text and records from Wikipedia and Wikidata (CC BY-SA), GBIF, USGS, and
-  Open-Meteo.
+  Open-Meteo. **Open-Meteo's free API tier is non-commercial only** (10,000
+  calls a day), which constrains a commercial *deployment* the way the Köppen
+  licence constrains redistribution. A paid tier uses the same endpoints.
