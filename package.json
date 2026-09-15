@@ -1,0 +1,19 @@
+{
+  "name": "globe-trackr",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Hex-tiled spinning Earth, coloured from real land-cover data.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --host",
+    "bake": "bash tools/fetch-sources.sh"
+  },
+  "dependencies": {
+    "three": "^0.169.0"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0"
+  }
+}

@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>globe.trackr.live — hex-tiled Earth</title>
+  <meta name="description" content="A slowly spinning Earth built from hexagonal tiles coloured by real land cover." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌍</text></svg>" />
+  <link rel="stylesheet" href="./src/styles.css" />
+</head>
+<body>
+  <canvas id="stage"></canvas>
+
+  <div id="boot" class="boot"><span class="boot-dot"></span>Baking tiles…</div>
+
+  <header class="hud">
+    <h1>globe<span>.trackr.live</span></h1>
+    <p id="stats">—</p>
+  </header>
+
+  <button id="panel-toggle" class="panel-toggle" type="button" aria-expanded="true" title="Toggle controls">☰</button>
+  <aside id="panel" class="panel" aria-label="Globe controls"></aside>
+
+  <section id="inspector" class="inspector" hidden aria-live="polite"></section>
+
+  <p class="hint">drag to orbit &middot; scroll to zoom &middot; click a tile</p>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
