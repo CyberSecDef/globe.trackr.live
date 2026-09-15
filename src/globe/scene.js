@@ -85,7 +85,19 @@ export class GlobeScene {
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping
     this.renderer.toneMappingExposure = 1.05
     this.renderer.shadowMap.enabled = true
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
+    // r186 removed PCFSoftShadowMap from the WebGL renderer. The constant is
+    // still exported, so assigning it looks fine and then WebGLShadowMap warns
+    // and rewrites this.type to PCFShadowMap on the first frame. Set the real
+    // value, so what the code says is what the renderer does.
+    //
+    // VSM was the other candidate and lost on measurement. Against r169's
+    // PCFSoft output, hard PCF differs by 0.98/255 mean luminance and VSM by
+    // 1.20; raising VSM's blur radius to 8 or 14 moves it further away (1.91,
+    // 2.90), not closer. At this tile size a penumbra is sub-pixel, so the
+    // softness has nothing to land on -- and VSM still pays for a blur pass
+    // over the shadow map every frame, which on a globe that auto-rotates
+    // means every frame forever.
+    this.renderer.shadowMap.type = THREE.PCFShadowMap
 
     this.scene = new THREE.Scene()
     this.scene.background = new THREE.Color(0x03060d)
