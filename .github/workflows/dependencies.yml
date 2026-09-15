@@ -1,0 +1,87 @@
+# Dependency scanning.
+#
+# The gate and the report are deliberately different things:
+#
+#   - Anything reachable from the shipped bundle fails the build. `three` is the
+#     only runtime dependency, so this is a tight, quiet signal.
+#   - Everything else — vite, esbuild, the dev server — is reported into the job
+#     summary but does not fail. Those advisories are almost always "a malicious
+#     website can talk to your dev server", which is real but never reaches
+#     dist/. Failing main on them is how a team learns to ignore a red X.
+#
+# Both numbers are visible on every run. Only one of them blocks.
+name: Dependencies
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '41 4 * * 1'   # Mondays, after the CodeQL run
+
+concurrency:
+  group: deps-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: npm audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install from the lockfile
+        run: npm ci
+
+      # The gate. Anything here ends up in the bytes a visitor downloads.
+      - name: Audit runtime dependencies
+        run: npm audit --omit=dev --audit-level=low
+
+      # The report. Never fails; always visible.
+      - name: Audit everything, including dev
+        if: always()
+        run: |
+          {
+            echo '## Full audit, including dev dependencies'
+            echo
+            echo 'Dev-only advisories do not fail this build. They do not reach `dist/`.'
+            echo
+            echo '```'
+            npm audit 2>&1 || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  review:
+    name: Dependency review
+    # Only meaningful on a pull request, where there is a base to diff against.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write   # to leave the summary comment
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Review the dependency diff
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294  # v5.0.0
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: on-failure
+          # A copyleft or non-commercial dependency would undercut the MIT
+          # licence on the code. See DATA-LICENSES.md for why that matters here.
+          deny-licenses: GPL-2.0, GPL-3.0, AGPL-3.0, LGPL-3.0

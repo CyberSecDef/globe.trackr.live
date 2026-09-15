@@ -1,0 +1,32 @@
+# Dependabot opens PRs for updates; the Dependencies and CodeQL workflows then
+# run against those PRs, so an update that introduces an advisory is caught
+# before it lands rather than after.
+version: 2
+
+updates:
+  # Two direct dependencies, so weekly is plenty and the noise stays near zero.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '05:00'
+    open-pull-requests-limit: 5
+    groups:
+      # One PR for the toolchain rather than three. `three` stays ungrouped:
+      # it is the only thing that ships, and its minor releases change renderer
+      # internals the shader patches in src/globe/scene.js depend on, so each
+      # one deserves to be looked at on its own.
+      dev-tooling:
+        dependency-type: development
+        update-types: [minor, patch]
+
+  # The workflows pin actions by SHA, which is safe but freezes them. Dependabot
+  # is what keeps a pinned SHA from quietly rotting into an unpatched version.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '05:00'
+    open-pull-requests-limit: 5

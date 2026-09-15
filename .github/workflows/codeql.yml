@@ -1,0 +1,59 @@
+# Static analysis of the source. Runs on every push to main, on pull requests,
+# and weekly — the weekly run matters because CodeQL ships new queries long
+# after code stops changing, and this repo changes rarely.
+#
+# Actions are pinned to commit SHAs rather than tags. A tag is mutable; whoever
+# controls the action repo can repoint v4 at anything, and these jobs hold a
+# token with security-events: write.
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '17 4 * * 1'   # Mondays 04:17 UTC, off the congested top of the hour
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze ${{ matrix.language }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    permissions:
+      contents: read
+      security-events: write   # to upload the SARIF results
+      actions: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # The browser code, and the bake script — which downloads remote
+        # archives and unpacks them, so it is worth analysing even though it
+        # only ever runs on a developer's machine.
+        language: [javascript-typescript, python]
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Initialise CodeQL
+        uses: github/codeql-action/init@b96794f015dfd88f77b49b1c93e0fa7110f94c63  # v4
+        with:
+          languages: ${{ matrix.language }}
+          # Nothing to compile: the analysed source is ES modules and a script.
+          build-mode: none
+          # security-extended adds the lower-precision queries. This is 3,900
+          # lines of browser code with no server and no auth, so the extra
+          # findings are cheap to triage and worth having.
+          queries: security-extended
+
+      - name: Analyse
+        uses: github/codeql-action/analyze@b96794f015dfd88f77b49b1c93e0fa7110f94c63  # v4
+        with:
+          category: /language:${{ matrix.language }}
