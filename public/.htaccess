@@ -1,0 +1,112 @@
+# Apache config for globe.trackr.live on DreamHost.
+#
+# Lives in public/ so vite copies it into dist/ and deploy ships it. Every
+# block is guarded by <IfModule>, so a module that is compiled but not enabled
+# costs a silent no-op rather than a 500.
+#
+# Modules confirmed available on the VPS: deflate, brotli, expires, headers,
+# rewrite.
+
+Options -Indexes -MultiViews
+
+# ---------------------------------------------------------------- compression
+#
+# Worth about 680 KB of the ~4 MB payload. The five rasters are PNG and JPEG
+# and do not compress at all -- listing image/* here would burn CPU to make
+# them a few bytes larger -- so only the text formats are enrolled.
+
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/plain
+  AddOutputFilterByType DEFLATE application/javascript text/javascript
+  AddOutputFilterByType DEFLATE application/json
+  AddOutputFilterByType DEFLATE image/svg+xml
+</IfModule>
+
+<IfModule mod_brotli.c>
+  AddOutputFilterByType BROTLI_COMPRESS text/html text/css text/plain
+  AddOutputFilterByType BROTLI_COMPRESS application/javascript text/javascript
+  AddOutputFilterByType BROTLI_COMPRESS application/json
+  AddOutputFilterByType BROTLI_COMPRESS image/svg+xml
+</IfModule>
+
+# -------------------------------------------------------------------- caching
+#
+# Two rules, because the build has two kinds of file.
+#
+# Vite's own output is content-hashed (index-i3TBFfUc.js), so a changed file is
+# a changed URL and it can be cached forever.
+#
+# The baked rasters in public/ keep the same filename across deploys. Cached
+# for a year, a re-bake would never reach anyone who had already visited. A
+# week with revalidation means a repeat visitor pays one conditional request
+# and gets a 304 in the normal case.
+#
+# index.html must never be cached hard or a deploy is invisible: it is the only
+# file that names the new hashed bundle.
+
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresDefault                          "access plus 1 week"
+  ExpiresByType text/html                 "access plus 0 seconds"
+  ExpiresByType image/png                 "access plus 1 week"
+  ExpiresByType image/jpeg                "access plus 1 week"
+  ExpiresByType application/json          "access plus 1 week"
+</IfModule>
+
+<IfModule mod_headers.c>
+  # Hashed build output: immutable.
+  <FilesMatch "-[A-Za-z0-9_-]{8,}\.(js|css)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+
+  # Stable-named data files: cache, but revalidate.
+  <FilesMatch "^earth-.*\.(png|jpg|json)$">
+    Header set Cache-Control "public, max-age=604800, must-revalidate"
+  </FilesMatch>
+
+  <FilesMatch "^index\.html$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+
+  # ------------------------------------------------------------------ headers
+
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Cross-Origin-Opener-Policy "same-origin"
+  # No iframes, no Flash-era crossdomain, no geolocation/camera/mic.
+  Header always set Permissions-Policy "geolocation=(), camera=(), microphone=(), interest-cohort=()"
+
+  # Content-Security-Policy.
+  #
+  # connect-src is exactly the eight keyless APIs src/data/provider.js talks to.
+  # Adding a source there means adding it here or the section silently fails to
+  # load -- that is the intended tradeoff, not an oversight.
+  #
+  # 'unsafe-inline' in style-src is load-bearing, not laziness: the inspector
+  # sets element.style directly for the colour swatch and the quake magnitude
+  # heat value, and CSP governs inline style attributes. Without it those render
+  # unstyled.
+  #
+  # img-src has no remote host. provider.js captures a Wikipedia thumbnail URL
+  # in `thumb` but nothing renders it today; if that ever changes, add
+  # https://upload.wikimedia.org here.
+  Header always set Content-Security-Policy "default-src 'self'; \
+base-uri 'self'; \
+object-src 'none'; \
+frame-ancestors 'none'; \
+form-action 'self'; \
+script-src 'self'; \
+style-src 'self' 'unsafe-inline'; \
+img-src 'self' data:; \
+connect-src 'self' https://en.wikipedia.org https://query.wikidata.org https://earthquake.usgs.gov https://api.gbif.org https://api.open-meteo.com https://archive-api.open-meteo.com https://marine-api.open-meteo.com https://air-quality-api.open-meteo.com"
+</IfModule>
+
+# ------------------------------------------------------------------- mimetypes
+#
+# DreamHost's default set is fine for these, but being explicit costs nothing
+# and stops a stray text/plain from disabling compression on the JSON tables.
+
+<IfModule mod_mime.c>
+  AddType application/json  .json
+  AddType image/svg+xml     .svg
+</IfModule>

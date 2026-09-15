@@ -2,3 +2,9 @@ node_modules/
 dist/
 tools/.cache/
 tools/.venv/
+
+# Deploy credentials. These unlock the very server they would be sitting on,
+# and this repo is public -- one `git add -A` would publish them.
+.env
+.env.*
+deploy/*.env
