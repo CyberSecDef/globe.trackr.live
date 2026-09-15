@@ -152,8 +152,14 @@ if [[ "$CODE" == "200" ]]; then
   ENC="$(curl -sS -o /dev/null -D - -H 'Accept-Encoding: gzip, br' --max-time 20 "$URL" 2>/dev/null \
          | grep -i '^content-encoding:' | tr -d '\r' || true)"
   echo "Deployed. ${URL} -> 200 ${ENC:+(${ENC})}"
-  [[ -z "$ENC" ]] && echo "note: no content-encoding on the HTML; check that mod_deflate is enabled." >&2
+  if [[ -z "$ENC" ]]; then
+    echo "note: no content-encoding on the HTML; check that mod_deflate is enabled." >&2
+  fi
 else
   echo "Deployed, but ${URL} returned ${CODE}." >&2
   echo "If DNS or the Let's Encrypt certificate is still propagating, that is expected." >&2
+  exit 1
 fi
+# `cmd && echo` as the last statement would make a successful deploy exit 1
+# whenever the test was false. Be explicit instead.
+exit 0
