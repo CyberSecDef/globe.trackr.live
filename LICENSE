@@ -19,11 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-The MIT licence above covers the source code in this repository only.
-
-The baked raster and table files in `public/` are derivative works of
-third-party datasets and carry their own terms, one of which is
-non-commercial. See DATA-LICENSES.md before redistributing or deploying.
